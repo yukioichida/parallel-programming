@@ -33,8 +33,8 @@ int main(int argc,char **argv){
     // ====================== MESTRE ============================
     t1 = MPI_Wtime();
     // Aloca as matrizes
-    int (*bag_of_tasks)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *bag_of_tasks);        
-    int (*results)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *results);
+    int (*bag_of_tasks)[ARRAY_SIZE] = malloc (N_ARRAYS * sizeof *bag_of_tasks);        
+    int (*results)[ARRAY_SIZE] = malloc (N_ARRAYS * sizeof *results);
 
     // populando nros invertidos
     for (i = 0; i < N_ARRAYS; i++){

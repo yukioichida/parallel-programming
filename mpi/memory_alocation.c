@@ -6,8 +6,8 @@ int main(int argc, char **argv)
 {
     int l,c,i,j;
 
-    l = 5;
-    c = 10;
+    l = 10;
+    c = 5;
 
     int (*M)[c] = malloc (l * sizeof *M);
 

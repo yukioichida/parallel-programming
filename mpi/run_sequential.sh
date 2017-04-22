@@ -1,0 +1,2 @@
+gcc sort_vector_sequential.c -o sort_vector_sequential
+./sort_vector_sequential
