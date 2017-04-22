@@ -1,5 +1,6 @@
 #include "mpi.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define ARRAY_SIZE 5 //Tamanho do array
 #define N_ARRAYS  5 // Quantidade de arrays
@@ -20,13 +21,12 @@ Versão onde o escravo requisita as tarefas
 */
 int main(int argc,char **argv){
 
-    int n_tasks, n_workers, task_id, exit_code, i, j, dest, task_type = 0, array_to_send, index, worker, recv_arrays;
+    int n_tasks, task_id, exit_code, i, j, task_type = 0, array_to_send, index, worker, recv_arrays;
     MPI_Status mpi_status;
 
     exit_code = MPI_Init(&argc,&argv);
     exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_tasks);
     exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
-    n_workers = n_tasks -1; // quantidade de workers
 
     if (exit_code != MPI_SUCCESS) {
         printf ("Error initializing MPI and obtaining task ID information\n");
@@ -34,17 +34,15 @@ int main(int argc,char **argv){
     }
 
     if (task_id == MASTER){        
+
+        int (*bag_of_tasks)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *bag_of_tasks);        
+        int (*results)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *results);
+
         // APENAS PARA TESTE - alocação estática
-        int bag_of_tasks[N_ARRAYS][ARRAY_SIZE]; // 3 tarefas com 2 números 
+        /*int bag_of_tasks[N_ARRAYS][ARRAY_SIZE]; // 3 tarefas com 2 números */
         for (i = 0; i < N_ARRAYS; i++){
             for(j=0; j < ARRAY_SIZE; j++){
-                bag_of_tasks [i][j] = (ARRAY_SIZE-j-1)*(1+i);
-            }
-        }
-        int results[N_ARRAYS][ARRAY_SIZE];
-        for (i = 0; i < N_ARRAYS; i++){
-            for(j=0; j < ARRAY_SIZE; j++){
-                results[i][j] = 0;
+                bag_of_tasks [i][j] = (ARRAY_SIZE-j-1)*(1+i); // populando nros invertidos
             }
         }
 
@@ -73,8 +71,8 @@ int main(int argc,char **argv){
         }
        
         task_type = POISON_PILL; // enviando POISON PILL para matar os escravos
-        for (dest = 1; dest < n_tasks; dest++){
-            MPI_Send(&task_type, 1, MPI_INT, dest, INDEX_MSG, MPI_COMM_WORLD);
+        for (worker = 1; worker < n_tasks; worker++){
+            MPI_Send(&task_type, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
         }
 
         printf("[MASTER] Resultados:\n");
@@ -85,10 +83,12 @@ int main(int argc,char **argv){
             }
             printf("]\n");
         }
+
+        free(bag_of_tasks);
+        free(results);
     } else {
         // ================ SLAVE ===================
         int alive = 1;
-        int task_type = 0;
         int array[ARRAY_SIZE];
         int index = FIRST_TASK;
         
