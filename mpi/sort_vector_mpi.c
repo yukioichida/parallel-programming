@@ -21,98 +21,91 @@ Versão onde o escravo requisita as tarefas
 */
 int main(int argc,char **argv){
 
-    int n_tasks, task_id, exit_code, i, j, task_type = 0, array_to_send, index, worker, recv_arrays;
-    MPI_Status mpi_status;
+  int n_tasks, task_id, exit_code, i, j, index, worker, task_type = 0, array_to_send = 0, recv_arrays = 0;
+  MPI_Status mpi_status;
 
-    exit_code = MPI_Init(&argc,&argv);
-    exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_tasks);
-    exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
+  exit_code = MPI_Init(&argc,&argv);
+  exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_tasks);
+  exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
 
-    if (exit_code != MPI_SUCCESS) {
-        printf ("Error initializing MPI and obtaining task ID information\n");
-        return 1;
+  if (exit_code != MPI_SUCCESS) {
+    printf ("Error initializing MPI and obtaining task ID information\n");
+    return 1;
+  }
+
+  if (task_id == MASTER){        
+
+    int (*bag_of_tasks)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *bag_of_tasks);        
+    int (*results)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *results);
+
+    for (i = 0; i < N_ARRAYS; i++){
+      for(j=0; j < ARRAY_SIZE; j++){
+        bag_of_tasks [i][j] = (ARRAY_SIZE-j-1)*(1+i); // populando nros invertidos
+      }
     }
 
-    if (task_id == MASTER){        
+    while(recv_arrays < N_ARRAYS) { /* Enquanto tiver arrays para receber */
 
-        int (*bag_of_tasks)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *bag_of_tasks);        
-        int (*results)[N_ARRAYS] = malloc (ARRAY_SIZE * sizeof *results);
-
-        // APENAS PARA TESTE - alocação estática
-        /*int bag_of_tasks[N_ARRAYS][ARRAY_SIZE]; // 3 tarefas com 2 números */
-        for (i = 0; i < N_ARRAYS; i++){
-            for(j=0; j < ARRAY_SIZE; j++){
-                bag_of_tasks [i][j] = (ARRAY_SIZE-j-1)*(1+i); // populando nros invertidos
-            }
+      for (worker = 1; worker < n_tasks; worker++){
+        if (recv_arrays < N_ARRAYS) {
+          MPI_Recv(&index, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD, &mpi_status);
+          if (index != FIRST_TASK){
+              MPI_Recv(&results[index], ARRAY_SIZE, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);    
+              recv_arrays++;
+          }
         }
-
-        array_to_send = 0; // arrays enviados
-        recv_arrays = 0;   // arrays recebidos
-        while(recv_arrays < N_ARRAYS) { /* Enquanto tiver arrays para receber */
-
-            for (worker = 1; worker < n_tasks; worker++){
-                if (recv_arrays < N_ARRAYS) {
-                    MPI_Recv(&index, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD, &mpi_status);
-                    if (index != FIRST_TASK){
-                        MPI_Recv(&results[index], ARRAY_SIZE, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);    
-                        recv_arrays++;
-                    }
-                }
-            }
-            
-            for(worker = 1; worker < n_tasks; worker++){
-                if (array_to_send < N_ARRAYS){
-                    MPI_Send(&array_to_send, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
-                    MPI_Send(&bag_of_tasks[array_to_send], ARRAY_SIZE, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
-                    array_to_send++;
-                }
-            }
-             
+      }
+      
+      for(worker = 1; worker < n_tasks; worker++){
+        if (array_to_send < N_ARRAYS){
+          MPI_Send(&array_to_send, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
+          MPI_Send(&bag_of_tasks[array_to_send], ARRAY_SIZE, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
+          array_to_send++;
         }
-       
-        task_type = POISON_PILL; // enviando POISON PILL para matar os escravos
-        for (worker = 1; worker < n_tasks; worker++){
-            MPI_Send(&task_type, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
-        }
-
-        printf("[MASTER] Resultados:\n");
-        for(i = 0; i < N_ARRAYS; i++){
-            printf("Array %d: [", i);
-            for (j = 0; j < ARRAY_SIZE; j++){
-                printf("%d ", results[i][j]);
-            }
-            printf("]\n");
-        }
-
-        free(bag_of_tasks);
-        free(results);
-    } else {
-        // ================ SLAVE ===================
-        int alive = 1;
-        int array[ARRAY_SIZE];
-        int index = FIRST_TASK;
-        
-        /* Já pede uma tarefa já de inicio */
-        MPI_Send(&index, 1, MPI_INT, MASTER, INDEX_MSG, MPI_COMM_WORLD); 
-        
-        do {
-            MPI_Recv(&index, 1, MPI_INT, MASTER, 1, MPI_COMM_WORLD, &mpi_status);
-            if (index == POISON_PILL) {
-                printf("[WORKER %d] Received POISON_PILL, ARGH!\n",task_id);
-                alive = 0;
-            } else {
-                MPI_Recv(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
-                // O escravo recebe seu vetor para trabalhar ...
-                qsort(array, ARRAY_SIZE, sizeof(int), cmpfunc);
-                // ... e envia para o mestre
-                MPI_Send(&index, 1, MPI_INT, MASTER, INDEX_MSG, MPI_COMM_WORLD); 
-                MPI_Send(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD); 
-            }
-        } while (alive != 0);
-        
+      }           
+    }
+   
+    task_type = POISON_PILL; // enviando POISON PILL para matar os escravos
+    for (worker = 1; worker < n_tasks; worker++){
+      MPI_Send(&task_type, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
     }
 
+    printf("[MASTER] Resultados:\n");
+    for(i = 0; i < N_ARRAYS; i++){
+      printf("Array %d: [", i);
+      for (j = 0; j < ARRAY_SIZE; j++){
+        printf("%d ", results[i][j]);
+      }
+      printf("]\n");
+    }
+    fflush(stdout);
 
-    MPI_Finalize();
+    free(bag_of_tasks);
+    free(results);
+  } else {
+    // ================ SLAVE ===================
+    int alive = 1;
+    int array[ARRAY_SIZE];
+    int index = FIRST_TASK;
+    
+    /* Já pede uma tarefa já de inicio */
+    MPI_Send(&index, 1, MPI_INT, MASTER, INDEX_MSG, MPI_COMM_WORLD); 
+    
+    do {
+      MPI_Recv(&index, 1, MPI_INT, MASTER, 1, MPI_COMM_WORLD, &mpi_status);
+      if (index == POISON_PILL) {
+        //printf("[WORKER %d] Received POISON_PILL, ARGH!\n",task_id);
+        alive = 0;
+      } else {
+        printf("[WORKER %d] Received vector %d!\n", task_id, index);
+        MPI_Recv(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);// O escravo recebe seu vetor, ...
+        qsort(array, ARRAY_SIZE, sizeof(int), cmpfunc);// ... trabalha...                
+        MPI_Send(&index, 1, MPI_INT, MASTER, INDEX_MSG, MPI_COMM_WORLD); // ... e envia para o mestre
+        MPI_Send(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
+      }
+    } while (alive != 0);        
+  }
+
+  MPI_Finalize();
 
 }
