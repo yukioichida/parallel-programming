@@ -17,7 +17,7 @@ int cmpfunc (const void * a, const void * b){
 /* Método onde é o escravo que requisita a tarefa */
 int main(int argc,char **argv){
 
-  int n_tasks, task_id, exit_code, i, j, index, worker, array_to_send = 0, recv_arrays = 0;
+  int n_tasks, task_id, exit_code, i, j, index, worker, array_to_send = 0, recv_arrays = 0, task_executed = 0;
   double t1, t2;  
   MPI_Status mpi_status;
   exit_code = MPI_Init(&argc,&argv);
@@ -91,14 +91,15 @@ int main(int argc,char **argv){
       } else {
         //printf("[WORKER %d] Received vector %d!\n", task_id, index);
         MPI_Recv(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);// O escravo recebe seu vetor, ...
-        qsort(array, ARRAY_SIZE, sizeof(int), cmpfunc);// ... trabalha...                
+        qsort(array, ARRAY_SIZE, sizeof(int), cmpfunc);// ... trabalha...
+        task_executed++;
         MPI_Send(&index, 1, MPI_INT, MASTER, INDEX_MSG, MPI_COMM_WORLD); // ... e envia para o mestre
         MPI_Send(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
       }
     } while (alive != 0);
 
     t2 = MPI_Wtime(); 
-    printf("[Worker %d] Duration [%f]\n", task_id, t2-t1);
+    printf("[Worker %d] Duration [%f] - Tasks [%d]\n", task_id, t2-t1, task_executed);
 
   }
 
