@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ARRAY_SIZE 5 //Tamanho do array
-#define N_ARRAYS  5 // Quantidade de arrays
+#define ARRAY_SIZE 100000 //Tamanho do array
+#define N_ARRAYS  1000 // Quantidade de arrays
 #define MASTER    0    // id do mestre
 #define POISON_PILL -2
 #define FIRST_TASK -1
@@ -44,9 +44,8 @@ int main(int argc,char **argv){
       }
     }
 
-    while(recv_arrays < N_ARRAYS) { /* Enquanto tiver arrays para receber */
-
-      for (worker = 1; worker < n_tasks; worker++){
+    while(recv_arrays < N_ARRAYS) { // Delega enquanto tem arrays para receber
+      for (worker = 1; worker < n_tasks; worker++){  // Recebe as requisições de trabalho...
         if (recv_arrays < N_ARRAYS) {
           MPI_Recv(&index, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD, &mpi_status);
           if (index != FIRST_TASK){
@@ -54,9 +53,8 @@ int main(int argc,char **argv){
               recv_arrays++;
           }
         }
-      }
-      
-      for(worker = 1; worker < n_tasks; worker++){
+      }      
+      for(worker = 1; worker < n_tasks; worker++){ // ... e envia mais vetores
         if (array_to_send < N_ARRAYS){
           MPI_Send(&array_to_send, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
           MPI_Send(&bag_of_tasks[array_to_send], ARRAY_SIZE, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
@@ -70,7 +68,7 @@ int main(int argc,char **argv){
       MPI_Send(&task_type, 1, MPI_INT, worker, INDEX_MSG, MPI_COMM_WORLD);
     }
 
-    printf("[MASTER] Resultados:\n");
+    /*printf("[MASTER] Resultados:\n");
     for(i = 0; i < N_ARRAYS; i++){
       printf("Array %d: [", i);
       for (j = 0; j < ARRAY_SIZE; j++){
@@ -79,7 +77,7 @@ int main(int argc,char **argv){
       printf("]\n");
     }
     fflush(stdout);
-
+*/
     free(bag_of_tasks);
     free(results);
   } else {
@@ -97,7 +95,7 @@ int main(int argc,char **argv){
         //printf("[WORKER %d] Received POISON_PILL, ARGH!\n",task_id);
         alive = 0;
       } else {
-        printf("[WORKER %d] Received vector %d!\n", task_id, index);
+        //printf("[WORKER %d] Received vector %d!\n", task_id, index);
         MPI_Recv(&array, ARRAY_SIZE, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);// O escravo recebe seu vetor, ...
         qsort(array, ARRAY_SIZE, sizeof(int), cmpfunc);// ... trabalha...                
         MPI_Send(&index, 1, MPI_INT, MASTER, INDEX_MSG, MPI_COMM_WORLD); // ... e envia para o mestre
