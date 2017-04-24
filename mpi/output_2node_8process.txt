@@ -1,0 +1,8 @@
+[Worker 2] Duration [4.327453] - Tasks [143]
+[Worker 1] Duration [4.327662] - Tasks [143]
+[Worker 4] Duration [4.327485] - Tasks [143]
+[Worker 3] Duration [4.327721] - Tasks [143]
+[Worker 6] Duration [4.327469] - Tasks [143]
+[Worker 5] Duration [4.327711] - Tasks [143]
+[Worker 7] Duration [4.327716] - Tasks [142]
+[Master] Duration [4.374744]
