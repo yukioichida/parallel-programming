@@ -88,7 +88,7 @@ int main(int argc,char **argv){
         sending = 0;
       }
     }
-    
+
     buffer[index_pos] = POISON_PILL; // enviando POISON PILL para matar os escravos
     for (worker = 1; worker < n_tasks; worker++){
       MPI_Send(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
@@ -123,7 +123,8 @@ int main(int argc,char **argv){
         alive = 0;
       } else {
         printf("[WORKER %d] Received vector %d!\n", task_id, index);
-        qsort(worker_buffer, ARRAY_SIZE, sizeof(int), cmpfunc);// ... trabalha...
+        // lembrando que a última posição é o índice, ou seja, não deve ser usado no algoritmo de ordenação
+        qsort(worker_buffer, (msg_size-1), sizeof(int), cmpfunc);// ... trabalha...
         task_executed++;
         MPI_Send(&worker_buffer, msg_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
       }
