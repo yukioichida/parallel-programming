@@ -1,28 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-void remove_index(int *array, int array_length){
-   int i;
-   for(i = 0; i < array_length - 1; i++) array[i] = array[i + 1];
-}
+int values[] = { 88, 56, 100, 2, 25 };
 
-void add_index(int *array, int index, int array_length){
-   int i;
-   for(i = array_length-1; i >= 0 - 1; i--) array[i] = array[i - 1];
-   array[0] = index;
+int cmpfunc (const void * a, const void * b)
+{
+   return ( *(int*)a - *(int*)b );
 }
 
 int main()
 {
-    int i;
-    int array[6] = {1,2,3,4,5,6};
-    int *firstHalf = array;
-    int *secondHalf = array + 1;
+   int n;
 
-    for (i=0;i<6;i++){
-        printf("%d\n", secondHalf[i]);
-    }
+   printf("Before sorting the list is: \n");
+   for( n = 0 ; n < 5; n++ ) 
+   {
+      printf("%d ", values[n]);
+   }
 
-    return 0;
+   qsort(values, 4, sizeof(int), cmpfunc);
+
+   printf("\nAfter sorting the list is: \n");
+   for( n = 0 ; n < 5; n++ ) 
+   {   
+      printf("%d ", values[n]);
+   }
+    printf("\n");
+   return(0);
 }
