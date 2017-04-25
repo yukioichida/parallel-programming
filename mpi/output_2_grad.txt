@@ -1,2 +1,0 @@
-[Worker 1] Duration [14.111207] - Tasks [1000]
-[Master] Duration [14.154822]
