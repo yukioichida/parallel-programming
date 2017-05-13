@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DELTA       10 // Quantidade mínima para iniciar o passo de conquista
-#define ROOT        0    // id da raiz
-#define ARRAY_SIZE  40
+#define DELTA 10 // delta value
+#define ROOT 0    // pid of first process
+#define ORIGINAL_ARRAY_SIZE  20
+#define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam){
   int *vetor_auxiliar;
@@ -26,26 +27,24 @@ void bs(int n, int * vetor){
   int c=0, d, troca, trocou =1;
   while (c < (n-1) & trocou ) {
     trocou = 0;
-    for (d = 0 ; d < n - c - 1; d++){
+    for (d = 0 ; d < n - c - 1; d++)
       if (vetor[d] > vetor[d+1]) {
-        troca      = vetor[d];
-        vetor[d]   = vetor[d+1];
-        vetor[d+1] = troca;
-        trocou = 1;
+          troca = vetor[d];
+          vetor[d] = vetor[d+1];
+          vetor[d+1] = troca;
+          trocou = 1;
       }
       c++;
-    }
   }
 }
 
 
-/* Método onde é o escravo que requisita a tarefa */
 int main(int argc,char **argv){
 
-  int n_tasks, task_id, exit_code, i, j;
-  double t1, t2;  // tempos para medição de duração de execuções
+  int n_tasks, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process;
+  int array_size = ORIGINAL_ARRAY_SIZE;
   MPI_Status mpi_status;
-  int *array;
+  int *array = (int *) malloc((ORIGINAL_ARRAY_SIZE) * sizeof *array);
 
   exit_code = MPI_Init(&argc,&argv);
   exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_tasks);
@@ -56,23 +55,54 @@ int main(int argc,char **argv){
     return 1;
   }
 
-  if (task_id == FIRST){
-    t1 = MPI_Wtime();
-    array = (int *) malloc(sizeof(int) * ARRAY_SIZE);
-    /* popula o vetor totalmente invertido */
-    for (int i = 0; i < ARRAY_SIZE; i++){
-      array[i] = ARRAY_SIZE-i; 
-    }
-    t2 = MPI_Wtime();
-    printf("[] Duration [%f]\n", task_id, t2-t1);
+  if (task_id == ROOT){
+    /* Allocates the vector */
+    array_size = ORIGINAL_ARRAY_SIZE;
+    /* Populate the vector with inverted values */
+    for (i = 0; i < array_size; i++) array[i] = array_size-i; 
   } else {
+    MPI_Recv(array, array_size, MPI_INT, MPI_ANY_SOURCE, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
+    
+    MPI_Get_count(&mpi_status, MPI_INT, &array_size);
 
-    t1 = MPI_Wtime();
-    // ================ SLAVE ===================
 
-    t2 = MPI_Wtime(); 
-    printf("[WORKER %d] Duration [%f] - Tasks [%d]\n", task_id, t2-t1, task_executed);
+    parent_process = mpi_status.MPI_SOURCE;
+    printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
   }
+
+  if (array_size <= DELTA){
+    bs(array_size, array);
+  }else{
+    process_left = (2*task_id) + 1;
+    process_right = process_left + 1;
+    half_vector = (array_size/2);
+    /* send vectors to sub processes */
+    MPI_Send(&array[0], half_vector, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD);
+    MPI_Send(&array[half_vector], half_vector, MPI_INT, process_right, MAIN_TAG, MPI_COMM_WORLD);
+    /* receive vectors from sub processes  */
+    MPI_Recv(&array[0], half_vector, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
+    MPI_Recv(&array[half_vector], half_vector, MPI_INT, process_right, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
+
+    int *fully_ordered_vector = interleaving(array, array_size);
+    /* copy fully ordered vector to process array */
+    memcpy(array, fully_ordered_vector, array_size * sizeof(int));
+    free(fully_ordered_vector);
+  }
+
+  
+  if (task_id == ROOT){
+    /* The task has been finished */
+    printf("Vetor ordenado: [\n");
+    for (i = 0; i < ORIGINAL_ARRAY_SIZE; i++)
+      printf("%d ", array[i]);
+    printf("]\n");
+  } else { 
+    /* Send vector  */
+    MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
+  }
+  printf("[Process %d]  Termina o processo...\n", task_id);
+
   MPI_Finalize();
+  free(array);
 
 }
