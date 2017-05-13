@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-#define DELTA 10 // delta value
 #define ROOT 0    // pid of first process
 #define ORIGINAL_ARRAY_SIZE  20
 #define MAIN_TAG 1
@@ -41,14 +41,27 @@ void bs(int n, int * vetor){
 
 int main(int argc,char **argv){
 
-  int n_tasks, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process;
+  int n_process, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process, tree_height, delta;
   int array_size = ORIGINAL_ARRAY_SIZE;
   MPI_Status mpi_status;
   int *array = (int *) malloc((ORIGINAL_ARRAY_SIZE) * sizeof *array);
 
   exit_code = MPI_Init(&argc,&argv);
-  exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_tasks);
+  exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_process);
   exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
+
+
+  tree_height = floor(log(n_process) / log(2))+1;
+  if (tree_height > 1) // Avoiding division by zero
+    delta = ORIGINAL_ARRAY_SIZE / (2 * (tree_height-1));
+  else{
+    printf("[ERROR] Should have at least two process to using parallel version.\n");
+    return 1;
+  }
+
+
+
+  printf("Delta = [%d] - Altura [%d]\n", delta, tree_height);
 
   if (exit_code != MPI_SUCCESS) {
     printf ("Error initializing MPI and obtaining task ID information\n");
@@ -70,7 +83,7 @@ int main(int argc,char **argv){
     printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
   }
 
-  if (array_size <= DELTA){
+  if (array_size <= delta){
     bs(array_size, array);
   }else{
     process_left = (2*task_id) + 1;
@@ -92,7 +105,7 @@ int main(int argc,char **argv){
   
   if (task_id == ROOT){
     /* The task has been finished */
-    printf("Vetor ordenado: [\n");
+    printf("Vetor ordenado: [");
     for (i = 0; i < ORIGINAL_ARRAY_SIZE; i++)
       printf("%d ", array[i]);
     printf("]\n");
@@ -100,7 +113,6 @@ int main(int argc,char **argv){
     /* Send vector  */
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
   }
-  printf("[Process %d]  Termina o processo...\n", task_id);
 
   MPI_Finalize();
   free(array);
