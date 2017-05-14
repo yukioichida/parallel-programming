@@ -95,12 +95,12 @@ int main(int argc,char *argv[]){
     array_size = ORIGINAL_ARRAY_SIZE;
     /* Populate the vector with inverted values */
     for (i = 0; i < array_size; i++) array[i] = array_size-i; 
-    printf("Tree height %d - Delta %d\n", tree_height, delta);
+    //printf("Tree height %d - Delta %d\n", tree_height, delta);
   } else {
     MPI_Recv(array, array_size, MPI_INT, MPI_ANY_SOURCE, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
     parent_process = mpi_status.MPI_SOURCE;
-    printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
+    //printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
     /*printf("[Process %d] Received vector: [", task_id);
     for (i = 0; i < array_size; i++)
       printf("%d ", array[i]);
@@ -110,7 +110,7 @@ int main(int argc,char *argv[]){
 
   if (array_size <= delta){
     bs(array_size, array); //conquer
-    printf("[Process %d] Conquer...\n", task_id);
+    //printf("[Process %d] Conquer...\n", task_id);
   }else{
     process_left = (2*task_id) + 1;
     process_right = process_left + 1;
@@ -140,18 +140,22 @@ int main(int argc,char *argv[]){
   }
 
   if (task_id == ROOT){ /* The task has been finished */
+    /*
     printf("Ordered vector: [");
     for (i = 0; i < ORIGINAL_ARRAY_SIZE; i++)
       printf("%d ", array[i]);
     printf("]\n");
+    */
+
+    t2 = MPI_Wtime();
+    printf("[Process \t%d\t] Duration = \t %f\n", task_id, (t2-t1));
   } else { 
     /* Send vector to parent process */
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
   }
 
-  t2 = MPI_Wtime();
   MPI_Finalize();
   free(array);
 
-  printf("[Process \t%d\t] Duration = \t %f\n", task_id, (t2-t1));
+  //printf("[Process \t%d\t] Duration = \t %f\n", task_id, (t2-t1));
 }
