@@ -1,0 +1,2 @@
+Tree height 3 - Delta 25000
+Duration = 	 0.301546
