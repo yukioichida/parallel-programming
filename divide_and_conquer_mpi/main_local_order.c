@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define ROOT 0    // pid of first process
-#define ORIGINAL_ARRAY_SIZE  21
+#define ORIGINAL_ARRAY_SIZE  1000
 #define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam, int offset1, int offset2, int offset3){
@@ -59,7 +59,7 @@ void bs(int n, int * vetor){
 
 int main(int argc,char *argv[]){
 
-  int n_process, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process, tree_height, delta;
+  int n_process, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process, tree_height, delta, min_delta;
   int array_size = ORIGINAL_ARRAY_SIZE;
   double t1, t2;  // tempos para medição de duração de execuções
   MPI_Status mpi_status;
@@ -78,10 +78,9 @@ int main(int argc,char *argv[]){
   }
 
   // each process will order a local part of array...
-  delta = (ORIGINAL_ARRAY_SIZE / n_process) + 1;
-
-  // Avoiding error state
-  if (delta < 3){
+  delta = (ORIGINAL_ARRAY_SIZE / n_process) ;
+  // if delta is very low, then the processes can conquer very early, leaving sub processes with no array to process
+  if (delta < 5){
     printf("Invalid number of process for array_size %d\n", ORIGINAL_ARRAY_SIZE);
     return 1;
   }
@@ -102,10 +101,11 @@ int main(int argc,char *argv[]){
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
     parent_process = mpi_status.MPI_SOURCE;
     printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
-    printf("[Process %d] Received vector: [", task_id);
+    /*printf("[Process %d] Received vector: [", task_id);
     for (i = 0; i < array_size; i++)
       printf("%d ", array[i]);
     printf("]\n");
+    */
   }
 
   if (array_size <= delta){
@@ -116,13 +116,13 @@ int main(int argc,char *argv[]){
     process_right = process_left + 1;
     int reduced_size = (array_size/3);
     /* offset2 is the second 1/3 part, offset3 is the third 1/3 part and limit is the remaining positions */
-    int offset2_start = reduced_size, offset3_start = (2*reduced_size)+1; // offsets start position
+    int offset2_start = reduced_size, offset3_start = (2*reduced_size); // offsets start position
     int offset2_size = (offset3_start - offset2_start), offset3_size = (array_size - offset3_start); // offsets end
 
     /* Order the first 1/3 of vector */
     bs(reduced_size, array);
 
-    printf("[Process %d] Local Ordered vector: [", task_id);
+    /*printf("[Process %d] Local Ordered vector: [", task_id);
     for (i = 0; i < reduced_size; i++)
       printf("%d ", array[i]);
     printf("]\n");
@@ -132,12 +132,6 @@ int main(int argc,char *argv[]){
     /* receive vectors from sub processes  */
     MPI_Recv(&array[offset2_start], offset2_size, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Recv(&array[offset3_start], offset3_size, MPI_INT, process_right, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
-
-
-    printf("[Process %d]Before interleaving vector: [",task_id);
-    for (i = 0; i < array_size; i++)
-      printf("%d ", array[i]);
-    printf("]\n");
 
     int *fully_ordered_vector = interleaving(array, array_size, 0, offset2_start, offset3_start);
     /* copy fully ordered vector to process array */

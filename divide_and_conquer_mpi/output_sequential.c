@@ -1,0 +1,1 @@
+[Sequential] Duration [47.510000] with size 100000
