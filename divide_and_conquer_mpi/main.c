@@ -61,8 +61,7 @@ int main(int argc,char *argv[]){
     return 1;
   }
 
-  printf("Tree height %d - Delta %d\n", tree_height, delta);
-
+  
   if (exit_code != MPI_SUCCESS) {
     printf ("Error initializing MPI and obtaining task ID information\n");
     return 1;
@@ -73,6 +72,7 @@ int main(int argc,char *argv[]){
     array_size = ORIGINAL_ARRAY_SIZE;
     /* Populate the vector with inverted values */
     for (i = 0; i < array_size; i++) array[i] = array_size-i; 
+    printf("Tree height %d - Delta %d\n", tree_height, delta);
   } else {
     MPI_Recv(array, array_size, MPI_INT, MPI_ANY_SOURCE, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
@@ -105,15 +105,16 @@ int main(int argc,char *argv[]){
     //for (i = 0; i < ORIGINAL_ARRAY_SIZE; i++)
     //  printf("%d ", array[i]);
     //printf("]\n");
+    t2 = MPI_Wtime();
+    printf("Duration = \t %f\n", task_id, (t2-t1));
   } else { 
     /* Send vector to parent process */
     //printf("[Process %d] Send vector to process %d\n", task_id, parent_process);
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
   }
-
-  t2 = MPI_Wtime();
+  
   MPI_Finalize();
   free(array);
 
-  printf("[Process \t%d\t] Duration = \t %f\n", task_id, (t2-t1));
+  
 }
