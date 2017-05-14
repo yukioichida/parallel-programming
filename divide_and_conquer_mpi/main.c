@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define ROOT 0    // pid of first process
-#define ORIGINAL_ARRAY_SIZE  1000
+#define ORIGINAL_ARRAY_SIZE  100000
 #define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam){
@@ -50,7 +50,6 @@ int main(int argc,char *argv[]){
   exit_code = MPI_Init(&argc,&argv);
   exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_process);
   exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
-
   t1 = MPI_Wtime();
 
   tree_height = floor(log(n_process) / log(2))+1;
@@ -61,7 +60,6 @@ int main(int argc,char *argv[]){
     return 1;
   }
 
-  
   if (exit_code != MPI_SUCCESS) {
     printf ("Error initializing MPI and obtaining task ID information\n");
     return 1;
@@ -77,12 +75,10 @@ int main(int argc,char *argv[]){
     MPI_Recv(array, array_size, MPI_INT, MPI_ANY_SOURCE, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
     parent_process = mpi_status.MPI_SOURCE;
-    //printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
   }
 
   if (array_size <= delta){
     bs(array_size, array); //conquer
-    //printf("[Process %d] Ordering...\n", task_id);
   }else{
     process_left = (2*task_id) + 1;
     process_right = process_left + 1;
@@ -100,21 +96,14 @@ int main(int argc,char *argv[]){
     free(fully_ordered_vector);
   }
 
-  if (task_id == ROOT){ /* The task has been finished */
-    //printf("Ordered vector: [");
-    //for (i = 0; i < ORIGINAL_ARRAY_SIZE; i++)
-    //  printf("%d ", array[i]);
-    //printf("]\n");
+  if (task_id == ROOT){
     t2 = MPI_Wtime();
     printf("Duration = \t %f\n", (t2-t1));
   } else { 
     /* Send vector to parent process */
-    //printf("[Process %d] Send vector to process %d\n", task_id, parent_process);
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
-  }
-  
-  MPI_Finalize();
-  free(array);
+  }  
 
-  
+  MPI_Finalize();
+  free(array);  
 }
