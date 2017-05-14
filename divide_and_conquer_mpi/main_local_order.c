@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define ROOT 0    // pid of first process
-#define ORIGINAL_ARRAY_SIZE  1000
+#define ORIGINAL_ARRAY_SIZE  100000
 #define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam, int offset1, int offset2, int offset3){
@@ -78,7 +78,7 @@ int main(int argc,char *argv[]){
   }
 
   // each process will order a local part of array...
-  delta = (ORIGINAL_ARRAY_SIZE / n_process) ;
+  delta = (ORIGINAL_ARRAY_SIZE / n_process) + 1;
   // if delta is very low, then the processes can conquer very early, leaving sub processes with no array to process
   if (delta < 5){
     printf("Invalid number of process for array_size %d\n", ORIGINAL_ARRAY_SIZE);
