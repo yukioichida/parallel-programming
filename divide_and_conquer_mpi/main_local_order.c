@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define ROOT 0    // pid of first process
-#define ORIGINAL_ARRAY_SIZE  100000
+#define ORIGINAL_ARRAY_SIZE  1000000
 #define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam, int offset1, int offset2, int offset3){
