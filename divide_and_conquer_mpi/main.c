@@ -75,7 +75,7 @@ int main(int argc,char *argv[]){
     MPI_Recv(array, array_size, MPI_INT, MPI_ANY_SOURCE, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
     parent_process = mpi_status.MPI_SOURCE;
-    printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
+    //printf("[Process %d] Received %d elements from process %d\n", task_id, array_size, parent_process);
   }
 
   if (array_size <= delta){
@@ -111,5 +111,5 @@ int main(int argc,char *argv[]){
   MPI_Finalize();
   free(array);
 
-  printf("[Process %d] Duration = %f\n", task_id, (t2-t1));
+  printf("[Process \t%d\t] Duration = \t %f\n", task_id, (t2-t1));
 }
