@@ -111,5 +111,5 @@ int main(int argc,char *argv[]){
   MPI_Finalize();
   free(array);
 
-  printf("[Process %d] Duration = %f\n", task_id, (t1-t2));
+  printf("[Process %d] Duration = %f\n", task_id, (t2-t1));
 }
