@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define ROOT 0    // pid of first process
-#define ORIGINAL_ARRAY_SIZE  100000
+#define ORIGINAL_ARRAY_SIZE  1000
 #define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam){
@@ -55,11 +55,13 @@ int main(int argc,char *argv[]){
 
   tree_height = floor(log(n_process) / log(2))+1;
   if (tree_height > 1) // Avoiding division by zero
-    delta = ORIGINAL_ARRAY_SIZE / (2 * (tree_height-1));
+    delta = ORIGINAL_ARRAY_SIZE / (pow(2, tree_height-1));
   else{
     printf("[ERROR] Should have at least two process to using parallel version.\n");
     return 1;
   }
+
+  printf("Tree height %d - Delta %d\n", tree_height, delta);
 
   if (exit_code != MPI_SUCCESS) {
     printf ("Error initializing MPI and obtaining task ID information\n");
@@ -80,6 +82,7 @@ int main(int argc,char *argv[]){
 
   if (array_size <= delta){
     bs(array_size, array); //conquer
+    //printf("[Process %d] Ordering...\n", task_id);
   }else{
     process_left = (2*task_id) + 1;
     process_right = process_left + 1;
@@ -104,6 +107,7 @@ int main(int argc,char *argv[]){
     //printf("]\n");
   } else { 
     /* Send vector to parent process */
+    //printf("[Process %d] Send vector to process %d\n", task_id, parent_process);
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
   }
 
