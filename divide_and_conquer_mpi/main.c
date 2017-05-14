@@ -106,7 +106,7 @@ int main(int argc,char *argv[]){
     //  printf("%d ", array[i]);
     //printf("]\n");
     t2 = MPI_Wtime();
-    printf("Duration = \t %f\n", task_id, (t2-t1));
+    printf("Duration = \t %f\n", (t2-t1));
   } else { 
     /* Send vector to parent process */
     //printf("[Process %d] Send vector to process %d\n", task_id, parent_process);
