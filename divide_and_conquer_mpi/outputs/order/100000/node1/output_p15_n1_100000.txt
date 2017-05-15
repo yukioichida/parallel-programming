@@ -1,2 +1,0 @@
-Tree height 4 - Delta 12500
-Duration = 	 0.183675

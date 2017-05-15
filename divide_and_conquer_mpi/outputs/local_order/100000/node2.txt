@@ -1,0 +1,21 @@
+3
+[Process 	0	] Duration = 	 0.510013
+
+7
+[Process 	0	] Duration = 	 0.502821
+
+15
+[Process 	0	] Duration = 	 0.529048
+
+31
+[Process 	0	] Duration = 	 1.290554
+
+======================= totalmente equilibrado ================================
+3
+[Process 	0	] Duration = 	 0.512765
+7
+[Process 	0	] Duration = 	 0.103017
+15
+[Process 	0	] Duration = 	 0.029217
+31
+[Process 	0	] Duration = 	 0.024587

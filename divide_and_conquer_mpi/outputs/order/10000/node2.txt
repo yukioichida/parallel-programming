@@ -1,0 +1,15 @@
+3
+Tree height 2 - Delta 5000
+Duration = 	 0.011875
+
+7
+Tree height 3 - Delta 2500
+Duration = 	 0.004441
+
+15
+Tree height 4 - Delta 1250
+Duration = 	 0.002137
+
+31
+Tree height 5 - Delta 625
+Duration = 	 0.002436
