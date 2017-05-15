@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define ROOT 0    // pid of first process
-#define ORIGINAL_ARRAY_SIZE  100000
+#define ORIGINAL_ARRAY_SIZE  40
 #define MAIN_TAG 1
 
 int *interleaving(int vetor[], int tam, int offset1, int offset2, int offset3){
@@ -52,7 +52,6 @@ void bs(int n, int * vetor){
   }
 }
 
-
 int main(int argc,char *argv[]){
 
   int n_process, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process, tree_height, delta, min_delta;
@@ -64,7 +63,6 @@ int main(int argc,char *argv[]){
   exit_code = MPI_Init(&argc,&argv);
   exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_process);
   exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
-
   t1 = MPI_Wtime();
 
   if (n_process < 1) {
@@ -72,14 +70,14 @@ int main(int argc,char *argv[]){
     return 1;
   }
 
+
   // each process will order a local part of array...
-  delta = (ORIGINAL_ARRAY_SIZE / n_process) + 1;
+  delta = (ORIGINAL_ARRAY_SIZE / n_process) + 1;  
   // if delta is very low, then the processes can conquer very early, leaving sub processes with no array to process
   if (delta < 5){
     printf("Invalid number of process for array_size %d\n", ORIGINAL_ARRAY_SIZE);
     return 1;
   }
-
   if (exit_code != MPI_SUCCESS) {
     printf ("Error initializing MPI and obtaining task ID information\n");
     return 1;
@@ -90,28 +88,39 @@ int main(int argc,char *argv[]){
     array_size = ORIGINAL_ARRAY_SIZE;
     /* Populate the vector with inverted values */
     for (i = 0; i < array_size; i++) array[i] = array_size-i; 
+    printf("Delta - %d\n", delta);
   } else {
     MPI_Recv(array, array_size, MPI_INT, MPI_ANY_SOURCE, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
     parent_process = mpi_status.MPI_SOURCE;
+    printf("[Process %d] Received vector with %d elements\n", task_id, array_size);
   }
 
   if (array_size <= delta){
+    printf("[Process %d] Conquer\n", task_id);
     bs(array_size, array);
+    printf("[Process %d] bubble completed\n", task_id);
   }else{
     process_left = (2*task_id) + 1;
     process_right = process_left + 1;
     int reduced_size = (array_size/3);
+    int local_part = delta;
+    int remaining =  array_size - local_part;
     /* offset2 is the second 1/3 part, offset3 is the third 1/3 part and limit is the remaining positions */
-    int offset2_start = reduced_size, offset3_start = (2*reduced_size); // offsets start position
-    int offset2_size = (offset3_start - offset2_start), offset3_size = (array_size - offset3_start); // offsets size
+    int offset2_start = local_part;
+    int offset3_start = delta + (remaining/2); // second part, ignoring local part
+    // offsets size
+    int offset2_size = (offset3_start - offset2_start);
+    int offset3_size = (array_size - offset3_start); 
 
     /* send others 1/3 vectors to sub processes */
     MPI_Send(&array[offset2_start], offset2_size, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD);
     MPI_Send(&array[offset3_start], offset3_size, MPI_INT, process_right, MAIN_TAG, MPI_COMM_WORLD);
 
-    /* Order the first 1/3 of vector, the first offset */
-    bs(reduced_size, array);
+    /* Order the first 1/3 of vector, the first offset, while the subprocesses works */
+    printf("[Process %d] Local order\n", task_id);
+    bs(delta, array);
+    printf("[Process %d] Local completed\n", task_id);
 
     /* receive vectors from sub processes  */
     MPI_Recv(&array[offset2_start], offset2_size, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
@@ -126,6 +135,13 @@ int main(int argc,char *argv[]){
   if (task_id == ROOT){ 
     t2 = MPI_Wtime();
     printf("[Process \t%d\t] Duration = \t %f\n", task_id, (t2-t1));
+
+    printf("Vector ordered = [");
+    for (i = 0; i < array_size; i++){
+      printf("%d ", array[i]);
+    }
+    printf("]\n");
+
   } else { 
     /* Send vector to parent process */
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
