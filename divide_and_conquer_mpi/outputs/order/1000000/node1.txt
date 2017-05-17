@@ -1,15 +1,21 @@
 3
 Tree height 2 - Delta 500000
-Duration = 	 115.969553
+Duration = 	 1120.935305
+
 
 7
 Tree height 3 - Delta 250000
-Duration = 	 30.379993
+Duration = 	 281.967736
 
 15
 Tree height 4 - Delta 125000
-Duration = 	 18.764476
+Duration = 	 74.006230
 
 31
 Tree height 5 - Delta 62500
-Duration = 	 9.343613
+Duration = 	  36.384845
+
+
+63
+Tree height 6 - Delta 31250
+Duration = 	 17.688428

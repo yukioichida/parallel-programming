@@ -1,8 +1,10 @@
 3
-[Process 	0	] Duration = 	 51.629025
+[Process 	0	] Duration = 	 500.629025
 7
-[Process 	0	] Duration = 	 9.931917
+[Process 	0	] Duration = 	 96.931917
 15
-[Process 	0	] Duration = 	 5.463567
+[Process 	0	] Duration = 	 40.463567
 31
-[Process 	0	] Duration = 	 2.591322
+[Process 	0	] Duration = 	 20.591322
+63
+[Process 	0	] Duration = 	 9.591322
