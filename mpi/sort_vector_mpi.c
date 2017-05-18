@@ -65,6 +65,9 @@ int main(int argc,char **argv){
       if (array_to_send < N_ARRAYS){
         MPI_Send(&bag_of_tasks[array_to_send], msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
         array_to_send++;
+      } else {
+        buffer[index_pos] = POISON_PILL;
+        MPI_Send(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);  
       }
       // Se o mestre já recebeu todos os vetores, então para o processo de envio
       if (received_arrays == N_ARRAYS) sending = 0;
