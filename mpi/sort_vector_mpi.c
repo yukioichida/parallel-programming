@@ -34,6 +34,9 @@ int main(int argc,char **argv){
   }
 
   if (task_id == MASTER){
+    int slave_recv[n_tasks];
+    int received_from_all = 1, process_waiting = 1;
+
     // ====================== MESTRE ============================
     t1 = MPI_Wtime();
     // Aloca as matrizes, com a última posição reservada para o índice
@@ -53,9 +56,10 @@ int main(int argc,char **argv){
     }
 
     // Delega enquanto tem arrays para receber
-    while(sending != 0) { 
+    while(sending != 0 && received_from_all != 0) { 
       MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
       index = buffer[index_pos];
+      slave_recv[mpi_status.MPI_SOURCE] = 1;
       if (index != FIRST_TASK){
         // Copia o resultado retornado do escravo pro saco de tarefas
         memcpy(results[index], buffer, msg_size * sizeof(int));       
@@ -67,10 +71,20 @@ int main(int argc,char **argv){
         array_to_send++;
       } else {
         buffer[index_pos] = POISON_PILL;
-        MPI_Send(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);  
+        MPI_Send(&buffer, msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);  
       }
       // Se o mestre já recebeu todos os vetores, então para o processo de envio
       if (received_arrays == N_ARRAYS) sending = 0;
+
+      process_waiting = 0;
+      for (i = 1; i < n_tasks; i++){
+        if (slave_recv[i] == 0){
+          process_waiting = 1;
+        }
+      }
+      if (process_waiting == 0){
+        received_from_all = 0;
+      }
     }
 
     buffer[index_pos] = POISON_PILL; // enviando POISON PILL para matar os escravos
