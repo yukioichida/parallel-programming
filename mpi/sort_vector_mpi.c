@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 100000 //Tamanho do array
-#define N_ARRAYS  1000 // Quantidade de arrays
+#define ARRAY_SIZE 100 //Tamanho do array
+#define N_ARRAYS  10 // Quantidade de arrays
 #define MASTER    0    // id do mestre
 #define POISON_PILL -2
 #define FIRST_TASK -1
@@ -35,7 +35,6 @@ int main(int argc,char **argv){
 
   if (task_id == MASTER){
     int slave_recv[n_tasks];
-    int received_from_all = 1, process_waiting = 1;
 
     // ====================== MESTRE ============================
     t1 = MPI_Wtime();
@@ -56,10 +55,11 @@ int main(int argc,char **argv){
     }
 
     // Delega enquanto tem arrays para receber
-    while(sending != 0 && received_from_all != 0) { 
+    while(sending != 0) { 
       MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
       index = buffer[index_pos];
       slave_recv[mpi_status.MPI_SOURCE] = 1;
+      printf("Received from %d, slave_recv %d \n", mpi_status.MPI_SOURCE, slave_recv[mpi_status.MPI_SOURCE]);
       if (index != FIRST_TASK){
         // Copia o resultado retornado do escravo pro saco de tarefas
         memcpy(results[index], buffer, msg_size * sizeof(int));       
@@ -75,20 +75,17 @@ int main(int argc,char **argv){
       }
       // Se o mestre já recebeu todos os vetores, então para o processo de envio
       if (received_arrays == N_ARRAYS) sending = 0;
-
-      process_waiting = 0;
-      for (i = 1; i < n_tasks; i++){
-        if (slave_recv[i] == 0){
-          process_waiting = 1;
-        }
-      }
-      if (process_waiting == 0){
-        received_from_all = 0;
-      }
     }
 
     buffer[index_pos] = POISON_PILL; // enviando POISON PILL para matar os escravos
+    printf("Sending POISON\n");
     for (worker = 1; worker < n_tasks; worker++){
+      printf("%d\n", slave_recv[i]);
+      if (slave_recv[worker] == 0){
+        printf("Processo %d não fez nada", worker);
+        MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
+        buffer[index_pos] = POISON_PILL; 
+      }
       MPI_Send(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
     }
 
