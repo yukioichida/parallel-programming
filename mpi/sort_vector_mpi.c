@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 100 //Tamanho do array
-#define N_ARRAYS  10 // Quantidade de arrays
+#define ARRAY_SIZE 1000000 //Tamanho do array
+#define N_ARRAYS  1000 // Quantidade de arrays
 #define MASTER    0    // id do mestre
 #define POISON_PILL -2
 #define FIRST_TASK -1
@@ -35,7 +35,9 @@ int main(int argc,char **argv){
 
   if (task_id == MASTER){
     int slave_recv[n_tasks];
-
+    for(i = 0; i < n_tasks; i++){
+        slave_recv[i] = 0;
+    }
     // ====================== MESTRE ============================
     t1 = MPI_Wtime();
     // Aloca as matrizes, com a última posição reservada para o índice
@@ -70,20 +72,22 @@ int main(int argc,char **argv){
         MPI_Send(&bag_of_tasks[array_to_send], msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
         array_to_send++;
       } else {
-        buffer[index_pos] = POISON_PILL;
-        MPI_Send(&buffer, msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);  
+       // buffer[index_pos] = POISON_PILL;
+       // MPI_Send(&buffer, msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);  
       }
       // Se o mestre já recebeu todos os vetores, então para o processo de envio
       if (received_arrays == N_ARRAYS) sending = 0;
     }
-
+    for(i=0;i<n_tasks;i++){
+       printf("Vetor recv: %d\n", slave_recv[i]);
+    }
     buffer[index_pos] = POISON_PILL; // enviando POISON PILL para matar os escravos
     printf("Sending POISON\n");
     for (worker = 1; worker < n_tasks; worker++){
-      printf("%d\n", slave_recv[i]);
+      //printf("%d\n", slave_recv[i]);
       if (slave_recv[worker] == 0){
         printf("Processo %d não fez nada", worker);
-        MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
+        MPI_Recv(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
         buffer[index_pos] = POISON_PILL; 
       }
       MPI_Send(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
@@ -116,7 +120,7 @@ int main(int argc,char **argv){
     } while (alive != 0);
 
     t2 = MPI_Wtime(); 
-    printf("[WORKER %d] Duration [%f] - Tasks [%d]\n", task_id, t2-t1, task_executed);
+  //  printf("[WORKER %d] Duration [%f] - Tasks [%d]\n", task_id, t2-t1, task_executed);
   }
   MPI_Finalize();
 }
