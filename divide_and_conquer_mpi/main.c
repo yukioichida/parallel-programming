@@ -38,7 +38,6 @@ void bs(int n, int * vetor){
   }
 }
 
-
 int main(int argc,char *argv[]){
 
   int n_process, task_id, exit_code, i, j, process_left, process_right, half_vector, parent_process, tree_height, delta;
@@ -50,8 +49,13 @@ int main(int argc,char *argv[]){
   exit_code = MPI_Init(&argc,&argv);
   exit_code|= MPI_Comm_size(MPI_COMM_WORLD,&n_process);
   exit_code|= MPI_Comm_rank(MPI_COMM_WORLD,&task_id);
+  if (exit_code != MPI_SUCCESS) {
+    printf ("Error initializing MPI and obtaining task ID information\n");
+    return 1;
+  }
   t1 = MPI_Wtime();
 
+  /* Calculando a altura da árvore e o DELTA */
   tree_height = floor(log(n_process) / log(2))+1;
   if (tree_height > 1) // Avoiding division by zero
     delta = ORIGINAL_ARRAY_SIZE / (pow(2, tree_height-1));
@@ -59,16 +63,9 @@ int main(int argc,char *argv[]){
     printf("[ERROR] Should have at least two process to using parallel version.\n");
     return 1;
   }
-
-  if (exit_code != MPI_SUCCESS) {
-    printf ("Error initializing MPI and obtaining task ID information\n");
-    return 1;
-  }
-
+  /* Verifica se aloca o vetor ou se recebe o vetor do processo superior*/
   if (task_id == ROOT){
-    /* Allocates the vector */
     array_size = ORIGINAL_ARRAY_SIZE;
-    /* Populate the vector with inverted values */
     for (i = 0; i < array_size; i++) array[i] = array_size-i; 
     printf("Tree height %d - Delta %d\n", tree_height, delta);
   } else {
@@ -76,22 +73,21 @@ int main(int argc,char *argv[]){
     MPI_Get_count(&mpi_status, MPI_INT, &array_size);
     parent_process = mpi_status.MPI_SOURCE;
   }
-
+  /* Divisão ou Conquista */
   if (array_size <= delta){
-    bs(array_size, array); //conquer
+    bs(array_size, array);
   }else{
     process_left = (2*task_id) + 1;
     process_right = process_left + 1;
     half_vector = (array_size/2);
-    /* send vectors to sub processes */
+    /* Envia os vetores para os subprocessos */
     MPI_Send(&array[0], half_vector, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD);
     MPI_Send(&array[half_vector], half_vector, MPI_INT, process_right, MAIN_TAG, MPI_COMM_WORLD);
-    /* receive vectors from sub processes  */
+    /* Recebe os resultados dos subprocessos */
     MPI_Recv(&array[0], half_vector, MPI_INT, process_left, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
     MPI_Recv(&array[half_vector], half_vector, MPI_INT, process_right, MAIN_TAG, MPI_COMM_WORLD, &mpi_status);
-
+    /* Ajusta as duas partes */
     int *fully_ordered_vector = interleaving(array, array_size);
-    /* copy fully ordered vector to process array */
     memcpy(array, fully_ordered_vector, array_size * sizeof(int));
     free(fully_ordered_vector);
   }
@@ -100,10 +96,9 @@ int main(int argc,char *argv[]){
     t2 = MPI_Wtime();
     printf("Duration = \t %f\n", (t2-t1));
   } else { 
-    /* Send vector to parent process */
+    /* Envia para o processo superior*/
     MPI_Send(&array[0], array_size, MPI_INT, parent_process, MAIN_TAG, MPI_COMM_WORLD);
-  }  
-
+  }
   MPI_Finalize();
   free(array);  
 }

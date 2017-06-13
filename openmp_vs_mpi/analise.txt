@@ -1,0 +1,12 @@
+ANÁLISE
+-------
+- Comparar MPI puro com OpenMP puro
+
+- Comparar a escalabilidade da ordenação
+	- Analisar curva de speed-up
+	- Mais escalavel = Mais próximo do speed-up ideal
+
+- Verificação do potencial do HT
+	- Verificar o ganho e a perda no uso de HT
+
+- Verificação da interferência do processo mestre
