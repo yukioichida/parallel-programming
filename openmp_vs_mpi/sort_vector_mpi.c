@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 1000000 //Tamanho do array
+#define ARRAY_SIZE 100000 //Tamanho do array
 #define N_ARRAYS  1000 // Quantidade de arrays
 #define MASTER    0    // id do mestre
 #define POISON_PILL -2
@@ -34,13 +34,11 @@ int main(int argc,char **argv){
   }
 
   if (task_id == MASTER){
-    /*===========================================*/
-    /*================ MASTER ===================*/
-    /*===========================================*/
-    int slave_recv[n_tasks];
+    int slave_recv[n_tasks]; // registrando os workers que realizaram a carga
     for(i = 0; i < n_tasks; i++){
         slave_recv[i] = 0;
     }
+    // ====================== MESTRE ============================
     t1 = MPI_Wtime();
     // Aloca as matrizes, com a última posição reservada para o índice
     int (*bag_of_tasks)[msg_size] = malloc (N_ARRAYS * sizeof *bag_of_tasks);        
@@ -72,8 +70,7 @@ int main(int argc,char **argv){
       if (array_to_send < N_ARRAYS){
         MPI_Send(&bag_of_tasks[array_to_send], msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
         array_to_send++;
-      } 
-
+      }
       // Se o mestre já recebeu todos os vetores, então para o processo de envio
       if (received_arrays == N_ARRAYS) sending = 0;
     }
@@ -93,10 +90,9 @@ int main(int argc,char **argv){
     free(results);
 
   } else {
-    /*===========================================*/
-    /*================ SLAVE ====================*/
-    /*===========================================*/
+
     t1 = MPI_Wtime();
+    // ================ SLAVE ===================
     int alive = 1;
     int worker_buffer[msg_size];
     worker_buffer[index_pos] = FIRST_TASK;
@@ -108,7 +104,7 @@ int main(int argc,char **argv){
         alive = 0;
       } else {
         // lembrando que a última posição é o índice, ou seja, não deve ser usado no algoritmo de ordenação
-        qsort(worker_buffer, (msg_size-1), sizeof(int), cmpfunc);
+        qsort(worker_buffer, (msg_size-1), sizeof(int), cmpfunc);// ... trabalha...
         task_executed++;
         MPI_Send(&worker_buffer, msg_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
       }
