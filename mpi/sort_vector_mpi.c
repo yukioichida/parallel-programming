@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 1000000 //Tamanho do array
+#define ARRAY_SIZE 100000 //Tamanho do array
 #define N_ARRAYS  1000 // Quantidade de arrays
 #define MASTER    0    // id do mestre
 #define POISON_PILL -2
@@ -61,7 +61,7 @@ int main(int argc,char **argv){
       MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
       index = buffer[index_pos];
       slave_recv[mpi_status.MPI_SOURCE] = 1;
-      printf("Received from %d, slave_recv %d \n", mpi_status.MPI_SOURCE, slave_recv[mpi_status.MPI_SOURCE]);
+//      printf("Received from %d, slave_recv %d \n", mpi_status.MPI_SOURCE, slave_recv[mpi_status.MPI_SOURCE]);
       if (index != FIRST_TASK){
         // Copia o resultado retornado do escravo pro saco de tarefas
         memcpy(results[index], buffer, msg_size * sizeof(int));       
@@ -78,15 +78,15 @@ int main(int argc,char **argv){
       // Se o mestre já recebeu todos os vetores, então para o processo de envio
       if (received_arrays == N_ARRAYS) sending = 0;
     }
-    for(i=0;i<n_tasks;i++){
+  /*  for(i=0;i<n_tasks;i++){
        printf("Vetor recv: %d\n", slave_recv[i]);
-    }
+    }*/
     buffer[index_pos] = POISON_PILL; // enviando POISON PILL para matar os escravos
-    printf("Sending POISON\n");
+  //  printf("Sending POISON\n");
     for (worker = 1; worker < n_tasks; worker++){
       //printf("%d\n", slave_recv[i]);
       if (slave_recv[worker] == 0){
-        printf("Processo %d não fez nada", worker);
+    //   printf("Processo %d não fez nada", worker);
         MPI_Recv(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
         buffer[index_pos] = POISON_PILL; 
       }
