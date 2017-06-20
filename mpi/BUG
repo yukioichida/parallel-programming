@@ -1,0 +1,8 @@
+BUG
+- apos enviar todos os vetores, tem que continuar recebendo
+- CASO NÃO TRATADO
+	- Caso todos os vetores forem enviados e ficar algum slave sem vetor, tem q tratar isso
+		- if send_vectors == total, manda poison pill
+		- a condição do loop acabar é ver se todos os slaves enviaram algo && recebeu todos os vetores
+			- MPI_SOURCE
+		- gravar num vetor os slaves que receberam, que ao final do loop enviar apenas para os slaves que ordenaram algo.
