@@ -1,3 +1,5 @@
 sort_vector_mpi
 sort_vector_omp
 sort_vector_hybrid
+omp
+omp_test.c
