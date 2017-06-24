@@ -1,0 +1,11 @@
+openpm
+	- sem mestre
+	- o vetor é processado
+	-
+
+openMP + mpi
+	- o mestre divide o pacote de vetores
+	- o escravo recebe um conjunto de vetores, diferente da primeira implementação que recebia apenas um vetor
+		- o paralelismo local (dentro do escravo) é por vetor do saco recebido
+	- dentro do escravo, deve ser usado o praga(não sei o que é)
+		- assim dentro do escravo o processo será paralelizado localmente usando threads
