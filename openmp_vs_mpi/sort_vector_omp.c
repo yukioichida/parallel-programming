@@ -14,9 +14,10 @@ int cmpfunc (const void * a, const void * b){
 
 /* Método onde é o escravo que requisita a tarefa */
 int main(int argc,char **argv){
-  int threads, task, thread_id, i, j, n = ARRAY_SIZE * N_ARRAYS;
-  double t1, t2;  // tempos para medição de duração de execuções
+  int threads, task, thread_id, i, j;
+  double t1, t2; 
 
+  /* A quantidade de threads é definida pelo primeiro argumento */
   if (argc == 1){
     threads = DEFAULT_THREADS; //default
   }else if (argc == 2){
@@ -30,36 +31,21 @@ int main(int argc,char **argv){
 
   /* Bag of tasks */
   int (*bag_of_tasks)[ARRAY_SIZE] = malloc (N_ARRAYS * sizeof *bag_of_tasks);
-
   for (i = 0; i < N_ARRAYS; i++){
-    for(j = 0; j < ARRAY_SIZE; j++){ //última posição reservada
-      bag_of_tasks [i][j] = n; 
-      n--;
+    for(j = 0; j < ARRAY_SIZE; j++){
+      bag_of_tasks [i][j] = (ARRAY_SIZE-j)*(i+1); ;
     }
   }
-
+  /* Distribuindo os vetores para as threads */
   omp_set_num_threads(threads);
   #pragma omp parallel private (task, i)
   #pragma omp for schedule (dynamic)
   for (task = 0; task < N_ARRAYS; task++){
     thread_id = omp_get_thread_num();
-    //printf("[Thread %d] Ordering vector %d\n", thread_id, task);
-    qsort(bag_of_tasks[task], ARRAY_SIZE, sizeof(int), cmpfunc);// ... trabalha...
+    qsort(bag_of_tasks[task], ARRAY_SIZE, sizeof(int), cmpfunc);
   }
 
   t2 = omp_get_wtime(); 
-
   printf("Tempo de execução: %3.2f segundos \n", t2-t1);
-
-  /*
-  for(i = 0; i < N_ARRAYS; i++){
-    printf("ORDERED - Vector number %d: [", i);
-    for(j = 0; j < ARRAY_SIZE; j++){
-      printf("%d ", bag_of_tasks[i][j]);
-    }
-    printf("]\n");
-  }
-  */
-
   free(bag_of_tasks);
 }
