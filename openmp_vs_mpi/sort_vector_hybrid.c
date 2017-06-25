@@ -6,7 +6,7 @@
 
 #define ARRAY_SIZE 10 //Tamanho do array
 #define N_ARRAYS  10 // Quantidade de arrays
-#define WORKER_ARRAYS 10 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
+#define WORKER_ARRAYS 5 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
 #define MASTER    0    // id do mestre
 #define THREADS 4
 #define POISON_PILL -2
@@ -76,22 +76,23 @@ int main(int argc,char **argv){
 
     /* Ao iniciar já envia para os workers as tarefas */
     for (worker = 1; worker < n_tasks; worker++){
-      int (*send_buffer) = malloc (buffer_size * sizeof(int));
-      k = 0;
-      for(i=0; i < WORKER_ARRAYS; i++){
-        for(j=0; j < msg_size; j++){
-          send_buffer[k++] = bag_of_tasks[sent_arrays][j];
+      if (sent_arrays < N_ARRAYS){
+        int (*send_buffer) = malloc (buffer_size * sizeof(int));
+        k = 0;
+        for(i=0; i < WORKER_ARRAYS; i++){
+          for(j=0; j < msg_size; j++){
+            send_buffer[k++] = bag_of_tasks[sent_arrays][j];
+          }
+          sent_arrays++;
         }
-        sent_arrays++;
+        MPI_Send(send_buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
+        free(send_buffer);
       }
-      MPI_Send(send_buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
-      free(send_buffer);
     }
 
 
     // Delega enquanto tem arrays para receber
     while(sending != 0) {
-      // Probe for an incoming message from process zero
       MPI_Recv(&buffer, buffer_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
       /* Recebe as respostas */
       k = 0;
@@ -161,7 +162,7 @@ int main(int argc,char **argv){
         #pragma omp for schedule (dynamic)
         for (i = 0; i < buffer_size; i += msg_size){
           int th_id = omp_get_thread_num();
-          printf("%d - [Worker %d][Thread %d] Ordering...\n", i, task_id, th_id);  
+          printf("[Worker %d][Thread %d] Ordering...\n", task_id, th_id);  
           bs(msg_size-1, &worker_buffer[i]);
         }
         MPI_Send(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
