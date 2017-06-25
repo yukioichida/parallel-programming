@@ -30,7 +30,7 @@ void bs(int n, int * vetor){
   }
 }
 
-/* Método onde é o escravo que requisita a tarefa */
+
 int main(int argc,char **argv){
 
   int n_tasks, task_id, array_per_thread, exit_code, i, j, k, index, worker, sent_arrays = 0, received_arrays = 0, task_executed = 0, sending = 1;
@@ -74,7 +74,6 @@ int main(int argc,char **argv){
       }      
     }
 
-
     // Delega enquanto tem arrays para receber
     while(sending != 0) {
       MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
@@ -94,19 +93,10 @@ int main(int argc,char **argv){
       }      
     }
 
-    // enviando POISON PILL para matar os escravos
+    // encerrando os processos
     buffer[index_pos] = POISON_PILL; 
     for (worker = 1; worker < n_tasks; worker++){
       MPI_Send(&buffer, msg_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
-    }
-
-    printf("====================\n");
-    for (i = 0; i < N_ARRAYS; i++){
-      printf("ORDERED - Vector number %d[", i);
-      for(j = 0; j < ARRAY_SIZE+1; j++){
-        printf("%d ", bag_of_tasks[i][j]);
-      }
-      printf("]\n");
     }
 
     t2 = MPI_Wtime(); 
@@ -124,7 +114,6 @@ int main(int argc,char **argv){
       if (index == POISON_PILL) {
         alive = 0;
       } else {
-        printf("[Worker %d]Ordering...\n", task_id);  
         bs(msg_size-1, &worker_buffer[0]);
         MPI_Send(worker_buffer, msg_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
       }

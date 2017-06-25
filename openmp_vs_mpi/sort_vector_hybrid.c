@@ -33,7 +33,7 @@ void bs(int n, int * vetor){
   }
 }
 
-/* Método onde é o escravo que requisita a tarefa */
+
 int main(int argc,char **argv){
 
   int threads, n_tasks, task_id, exit_code, i, j, k, index, worker, sent_arrays = 0, received_arrays = 0, sending = 1;
@@ -64,8 +64,6 @@ int main(int argc,char **argv){
     printf ("Error initializing MPI and obtaining task ID information\n");
     return 1;
   }
-
-
 
   if (task_id == MASTER){
     // ====================== MESTRE ============================
@@ -101,14 +99,12 @@ int main(int argc,char **argv){
       }
     }
 
-
     // Delega enquanto tem arrays para receber
     while(sending != 0) {
       MPI_Recv(&buffer, buffer_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
-      /* Recebe as respostas */
       k = 0;
-      for (i=0; i < WORKER_ARRAYS; i++){
-        /* Separa em um sub-buffer a matriz para ir para o bag */        
+      /* Separa em um sub-buffer o conjunto de vetores para ir para o bag */ 
+      for (i=0; i < WORKER_ARRAYS; i++){               
         int receive_buffer[msg_size];
         for (j = 0; j < msg_size; j++){
           receive_buffer[j] = buffer[k++];
@@ -125,6 +121,7 @@ int main(int argc,char **argv){
         if (sent_arrays < N_ARRAYS){
           int (*send_buffer) = malloc (buffer_size * sizeof(int));
           k = 0;
+          /* Concatena os arrays a serem enviados para o worker */
           for(i=0; i < WORKER_ARRAYS; i++){
             for(j=0; j < msg_size; j++){
               send_buffer[k++] = bag_of_tasks[sent_arrays][j];
@@ -141,15 +138,6 @@ int main(int argc,char **argv){
     buffer[index_pos] = POISON_PILL; 
     for (worker = 1; worker < n_tasks; worker++){
       MPI_Send(&buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
-    }
-
-    printf("====================\n");
-    for (i = 0; i < N_ARRAYS; i++){
-      printf("ORDERED - Vector number %d[", i);
-      for(j = 0; j < ARRAY_SIZE+1; j++){
-        printf("%d ", bag_of_tasks[i][j]);
-      }
-      printf("]\n");
     }
 
     t2 = MPI_Wtime(); 
