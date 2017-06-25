@@ -8,7 +8,7 @@
 #define N_ARRAYS  10 // Quantidade de arrays
 #define WORKER_ARRAYS 5 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
 #define MASTER    0    // id do mestre
-#define THREADS 4
+#define DEFAULT_THREADS 4
 #define POISON_PILL -2
 #define FIRST_TASK -1
 #define ARRAY_MSG 2 // tipo de mensagem que transmite um array
@@ -36,11 +36,22 @@ void bs(int n, int * vetor){
 /* Método onde é o escravo que requisita a tarefa */
 int main(int argc,char **argv){
 
-  int n_tasks, task_id, array_per_thread, exit_code, i, j, k, index, worker, sent_arrays = 0, received_arrays = 0, task_executed = 0, sending = 1;
+  int threads, n_tasks, task_id, exit_code, i, j, k, index, worker, sent_arrays = 0, received_arrays = 0, sending = 1;
   int msg_size = (ARRAY_SIZE+1); // tamanho da mensagem trafegada entre os processos
   int index_pos = msg_size -1; // posição onde estará o índice do vetor
   double t1, t2;  // tempos para medição de duração de execuções
   MPI_Status mpi_status;
+
+  /* A quantidade de threads é definida pelo primeiro argumento */
+  if (argc == 1){
+    threads = DEFAULT_THREADS; //default
+  }else if (argc == 2){
+    threads = atoi(argv[1]);
+  } else {
+    printf("Usage: %s number_of_threads.\n", argv[0]);
+    return 0;
+  }
+  printf("Run with %d threads...\n", threads);
 
   /* tamanho do buffer trafegado entre worker e master */
   int buffer_size = msg_size * WORKER_ARRAYS;
@@ -157,7 +168,7 @@ int main(int argc,char **argv){
         alive = 0;
       } else {
         /*======== PARALELISMO LOCAL COM OPENMP ===================*/
-        omp_set_num_threads(THREADS);
+        omp_set_num_threads(threads);
         #pragma omp parallel private (i)
         #pragma omp for schedule (dynamic)
         for (i = 0; i < buffer_size; i += msg_size){
