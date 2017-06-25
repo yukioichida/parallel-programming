@@ -33,7 +33,7 @@ int main(int argc,char **argv){
   int (*bag_of_tasks)[ARRAY_SIZE] = malloc (N_ARRAYS * sizeof *bag_of_tasks);
   for (i = 0; i < N_ARRAYS; i++){
     for(j = 0; j < ARRAY_SIZE; j++){
-      bag_of_tasks [i][j] = (ARRAY_SIZE-j)*(i+1); ;
+      bag_of_tasks [i][j] = (ARRAY_SIZE-j)*(i+1);
     }
   }
   /* Distribuindo os vetores para as threads */
@@ -41,7 +41,6 @@ int main(int argc,char **argv){
   #pragma omp parallel private (task, i)
   #pragma omp for schedule (dynamic)
   for (task = 0; task < N_ARRAYS; task++){
-    thread_id = omp_get_thread_num();
     qsort(bag_of_tasks[task], ARRAY_SIZE, sizeof(int), cmpfunc);
   }
 
