@@ -46,5 +46,18 @@ int main(int argc,char **argv){
 
   t2 = omp_get_wtime(); 
   printf("Tempo de execução: %3.2f segundos \n", t2-t1);
+
+  // PRINT CONDICIONAL
+  #if DEBUG == 1
+  printf("Print enabled...\n");
+  for (i = 0; i < N_ARRAYS; i++){
+    printf("Vector %d [", i);
+    for(j=0; j<ARRAY_SIZE; j++){
+      printf("%d ", bag_of_tasks[i][j]);
+    }
+    printf("]\n");
+  }
+  #endif
+
   free(bag_of_tasks);
 }
