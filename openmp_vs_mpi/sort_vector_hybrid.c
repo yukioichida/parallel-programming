@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 10 //Tamanho do array
-#define N_ARRAYS  10 // Quantidade de arrays
+#define ARRAY_SIZE 10000 //Tamanho do array
+#define N_ARRAYS  1000 // Quantidade de arrays
 #define WORKER_ARRAYS 10 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
 #define MASTER    0    // id do mestre
 #define DEFAULT_THREADS 4
@@ -165,7 +165,6 @@ int main(int argc,char **argv){
     int (*worker_buffer) = malloc (buffer_size * sizeof(int));
     do {
       MPI_Recv(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
-      printf("[worker]ecv\n");
       index = worker_buffer[index_pos];
       if (index == POISON_PILL) {
         alive = 0;
@@ -176,7 +175,7 @@ int main(int argc,char **argv){
         #pragma omp for schedule (dynamic)
         for (i = 0; i < buffer_size; i += msg_size){
           //int th_id = omp_get_thread_num();
-          //printf("[Worker %d][Thread %d] Ordering...\n", task_id, th_id);  
+          //printf("[Worker %d][Thread %d] Ordering...\n", task_id, th_id); 
           bs(msg_size-1, &worker_buffer[i]);
         }
         MPI_Send(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
