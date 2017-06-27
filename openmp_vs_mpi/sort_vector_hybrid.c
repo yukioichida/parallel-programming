@@ -6,12 +6,13 @@
 
 #define ARRAY_SIZE 10 //Tamanho do array
 #define N_ARRAYS  10 // Quantidade de arrays
-#define WORKER_ARRAYS 5 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
+#define WORKER_ARRAYS 10 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
 #define MASTER    0    // id do mestre
 #define DEFAULT_THREADS 4
 #define POISON_PILL -2
 #define FIRST_TASK -1
 #define ARRAY_MSG 2 // tipo de mensagem que transmite um array
+#define DEBUG 1
 
 /* Função de que é usado pelo qsort */
 int cmpfunc (const void * a, const void * b){
@@ -71,7 +72,8 @@ int main(int argc,char **argv){
     // Aloca as matrizes, com a última posição reservada para o índice
     int (*bag_of_tasks)[msg_size] = malloc (N_ARRAYS * sizeof *bag_of_tasks);
     //buffer usado para transmissão de mensagem entre mestre e escravos
-    int buffer[buffer_size];
+    //int buffer[buffer_size];
+    int (*buffer) = malloc (buffer_size * sizeof(int));
     // Define a última posição como identificador do array
     for (i=0; i < N_ARRAYS; i++){
       bag_of_tasks[i][index_pos] = i;
@@ -86,22 +88,20 @@ int main(int argc,char **argv){
     /* Ao iniciar já envia para os workers as tarefas */
     for (worker = 1; worker < n_tasks; worker++){
       if (sent_arrays < N_ARRAYS){
-        int (*send_buffer) = malloc (buffer_size * sizeof(int));
         k = 0;
         for(i=0; i < WORKER_ARRAYS; i++){
           for(j=0; j < msg_size; j++){
-            send_buffer[k++] = bag_of_tasks[sent_arrays][j];
+            buffer[k++] = bag_of_tasks[sent_arrays][j];
           }
           sent_arrays++;
         }
-        MPI_Send(send_buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
-        free(send_buffer);
+        MPI_Send(buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
       }
     }
 
     // Delega enquanto tem arrays para receber
     while(sending != 0) {
-      MPI_Recv(&buffer, buffer_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
+      MPI_Recv(buffer, buffer_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
       k = 0;
       /* Separa em um sub-buffer o conjunto de vetores para ir para o bag */ 
       for (i=0; i < WORKER_ARRAYS; i++){               
@@ -119,17 +119,17 @@ int main(int argc,char **argv){
       }else{
         // Verifica se já enviou todos
         if (sent_arrays < N_ARRAYS){
-          int (*send_buffer) = malloc (buffer_size * sizeof(int));
+          //int (*send_buffer) = malloc (buffer_size * sizeof(int));
           k = 0;
           /* Concatena os arrays a serem enviados para o worker */
           for(i=0; i < WORKER_ARRAYS; i++){
             for(j=0; j < msg_size; j++){
-              send_buffer[k++] = bag_of_tasks[sent_arrays][j];
+              buffer[k++] = bag_of_tasks[sent_arrays][j];
             }
             sent_arrays++;
           }
-          MPI_Send(send_buffer, buffer_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
-          free(send_buffer);
+          MPI_Send(buffer, buffer_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
+          //free(send_buffer);
         }
       }      
     }
@@ -137,7 +137,7 @@ int main(int argc,char **argv){
     // enviando POISON PILL para matar os escravos
     buffer[index_pos] = POISON_PILL; 
     for (worker = 1; worker < n_tasks; worker++){
-      MPI_Send(&buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
+      MPI_Send(buffer, buffer_size, MPI_INT, worker, ARRAY_MSG, MPI_COMM_WORLD);
     }
 
     t2 = MPI_Wtime(); 
@@ -155,6 +155,7 @@ int main(int argc,char **argv){
     }
     #endif
     
+    free(buffer);
     free(bag_of_tasks);
 
   } else {
@@ -164,6 +165,7 @@ int main(int argc,char **argv){
     int (*worker_buffer) = malloc (buffer_size * sizeof(int));
     do {
       MPI_Recv(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
+      printf("[worker]ecv\n");
       index = worker_buffer[index_pos];
       if (index == POISON_PILL) {
         alive = 0;
@@ -173,8 +175,8 @@ int main(int argc,char **argv){
         #pragma omp parallel private (i)
         #pragma omp for schedule (dynamic)
         for (i = 0; i < buffer_size; i += msg_size){
-          int th_id = omp_get_thread_num();
-          printf("[Worker %d][Thread %d] Ordering...\n", task_id, th_id);  
+          //int th_id = omp_get_thread_num();
+          //printf("[Worker %d][Thread %d] Ordering...\n", task_id, th_id);  
           bs(msg_size-1, &worker_buffer[i]);
         }
         MPI_Send(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
@@ -182,6 +184,7 @@ int main(int argc,char **argv){
     } while (alive != 0);
 
     free(worker_buffer);
+    printf("Ending worker\n");
   }
   MPI_Finalize();
 }
