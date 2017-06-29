@@ -1,0 +1,13 @@
+
+
+- Comunicação faz a diferença
+	- buffer trafegado é de 32*9600 = 307200
+	- buffer 32 vezes maior
+	- comunicação com buffer maior
+
+- Tempo
+	- Parece que no hyperthread o mpi tem maior ganho
+	- hibrido perdeu folego no hiperthreading
+	- a estrutura que recebe é uma só, o mestre
+	- custo de montagem do buffer de envio
+	- custo de desmontagem do buffer de recebimento

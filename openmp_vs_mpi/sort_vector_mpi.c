@@ -37,7 +37,7 @@ int main(int argc,char **argv){
   int n_tasks, task_id, array_per_thread, exit_code, i, j, k, index, worker, sent_arrays = 0, received_arrays = 0, task_executed = 0, sending = 1;
   int msg_size = (ARRAY_SIZE+1); // tamanho da mensagem trafegada entre os processos
   int index_pos = msg_size -1; // posição onde estará o índice do vetor
-  double t1, t2;  // tempos para medição de duração de execuções
+  double t1, t2, t1_send, t2_send, t1_recv, t2_recv;  // tempos para medição de duração de execuções
   MPI_Status mpi_status;
 
   exit_code = MPI_Init(&argc,&argv);
@@ -77,7 +77,11 @@ int main(int argc,char **argv){
 
     // Delega enquanto tem arrays para receber
     while(sending != 0) {
+      t1_recv = MPI_Wtime();
       MPI_Recv(&buffer, msg_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
+      t2_recv = MPI_Wtime();
+      printf("[Master] Recv time: [%f]\n", (t2_recv - t1_recv));
+
       int index = buffer[index_pos];
       memcpy(bag_of_tasks[index], buffer, msg_size * sizeof(int));
       received_arrays++;  // registra o recebimento de um array
@@ -88,7 +92,10 @@ int main(int argc,char **argv){
       }else{
         // Verifica se já enviou todos
         if (sent_arrays < N_ARRAYS){
+          t1_send = MPI_Wtime();
           MPI_Send(&bag_of_tasks[sent_arrays], msg_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
+          t2_send = MPI_Wtime();
+          printf("[Master] Send and build buffer time: [%f]\n", (t2_send - t1_send));
           sent_arrays++;
         }
       }      

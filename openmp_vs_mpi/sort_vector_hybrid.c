@@ -44,7 +44,7 @@ int main(int argc,char **argv){
   int threads, n_tasks, task_id, exit_code, i, j, k, index, worker, sent_arrays = 0, received_arrays = 0, sending = 1;
   int msg_size = (ARRAY_SIZE+1); // tamanho da mensagem trafegada entre os processos
   int index_pos = msg_size -1; // posição onde estará o índice do vetor
-  double t1, t2;  // tempos para medição de duração de execuções
+  double t1, t2, t1_send, t2_send, t1_recv, t2_recv;  // tempos para medição de duração de execuções
   MPI_Status mpi_status;
 
   /* A quantidade de threads é definida pelo primeiro argumento */
@@ -104,7 +104,10 @@ int main(int argc,char **argv){
 
     // Delega enquanto tem arrays para receber
     while(sending != 0) {
+      t1_recv = MPI_Wtime();
       MPI_Recv(buffer, buffer_size, MPI_INT, MPI_ANY_SOURCE, ARRAY_MSG, MPI_COMM_WORLD, &mpi_status);
+      t2_recv = MPI_Wtime();
+      printf("[Master] Recv time: [%f]\n", (t2_recv - t1_recv));
       k = 0;
       /* Separa em um sub-buffer o conjunto de vetores para ir para o bag */ 
       for (i=0; i < WORKER_ARRAYS; i++){               
@@ -122,6 +125,7 @@ int main(int argc,char **argv){
       }else{
         // Verifica se já enviou todos
         if (sent_arrays < N_ARRAYS){
+          t1_send = MPI_Wtime();
           k = 0;
           /* Concatena os arrays a serem enviados para o worker */
           for(i=0; i < WORKER_ARRAYS; i++){
@@ -131,6 +135,8 @@ int main(int argc,char **argv){
             sent_arrays++;
           }
           MPI_Send(buffer, buffer_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
+          t2_send = MPI_Wtime();
+          printf("[Master] Send and build buffer time: [%f]\n", (t2_send - t1_send));
         }
       }      
     }
