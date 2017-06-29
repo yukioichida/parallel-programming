@@ -4,9 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 10000 //Tamanho do array
-#define N_ARRAYS  1000 // Quantidade de arrays
-#define WORKER_ARRAYS 10 // quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
+#define ARRAY_SIZE 9600 //Tamanho do array
+#define N_ARRAYS  960 // Quantidade de arrays
+
+// quantidade de arrays que o worker passa a receber, TEM QUE SER MULTIPLO DA QUANTIDADE DE ARRAYS
+#define WORKER_ARRAYS 32 
+
+
 #define MASTER    0    // id do mestre
 #define DEFAULT_THREADS 4
 #define POISON_PILL -2
@@ -67,12 +71,11 @@ int main(int argc,char **argv){
   }
 
   if (task_id == MASTER){
-    // ====================== MESTRE ============================
     t1 = MPI_Wtime();
+    // ====================== MESTRE ============================
     // Aloca as matrizes, com a última posição reservada para o índice
     int (*bag_of_tasks)[msg_size] = malloc (N_ARRAYS * sizeof *bag_of_tasks);
     //buffer usado para transmissão de mensagem entre mestre e escravos
-    //int buffer[buffer_size];
     int (*buffer) = malloc (buffer_size * sizeof(int));
     // Define a última posição como identificador do array
     for (i=0; i < N_ARRAYS; i++){
@@ -119,7 +122,6 @@ int main(int argc,char **argv){
       }else{
         // Verifica se já enviou todos
         if (sent_arrays < N_ARRAYS){
-          //int (*send_buffer) = malloc (buffer_size * sizeof(int));
           k = 0;
           /* Concatena os arrays a serem enviados para o worker */
           for(i=0; i < WORKER_ARRAYS; i++){
@@ -129,7 +131,6 @@ int main(int argc,char **argv){
             sent_arrays++;
           }
           MPI_Send(buffer, buffer_size, MPI_INT, mpi_status.MPI_SOURCE, ARRAY_MSG, MPI_COMM_WORLD);
-          //free(send_buffer);
         }
       }      
     }
@@ -159,7 +160,6 @@ int main(int argc,char **argv){
     free(bag_of_tasks);
 
   } else {
-
     // ================ SLAVE ===================
     int alive = 1;
     int (*worker_buffer) = malloc (buffer_size * sizeof(int));
@@ -174,16 +174,12 @@ int main(int argc,char **argv){
         #pragma omp parallel private (i)
         #pragma omp for schedule (dynamic)
         for (i = 0; i < buffer_size; i += msg_size){
-          //int th_id = omp_get_thread_num();
-          //printf("[Worker %d][Thread %d] Ordering...\n", task_id, th_id); 
           bs(msg_size-1, &worker_buffer[i]);
         }
         MPI_Send(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
       }
     } while (alive != 0);
-
     free(worker_buffer);
-    printf("Ending worker\n");
   }
   MPI_Finalize();
 }

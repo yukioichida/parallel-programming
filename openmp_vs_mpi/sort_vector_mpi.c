@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ARRAY_SIZE 10 //Tamanho do array
-#define N_ARRAYS  10 // Quantidade de arrays
+#define ARRAY_SIZE 9600 //Tamanho do array
+#define N_ARRAYS  960 // Quantidade de arrays
 #define MASTER    0    // id do mestre
 #define POISON_PILL -2
 #define FIRST_TASK -1
