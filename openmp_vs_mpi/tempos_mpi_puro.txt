@@ -1,0 +1,14 @@
+16 ./sort_mpi
+Duration [26.527833]
+
+32 ./sort_mpi
+Duration [13.578312]
+
+48 ./sort_mpi
+Duration [13.537977]
+
+64 ./sort_mpi
+Duration [13.233283]
+
+80 ./sort_mpi
+Duration [13.832723]
