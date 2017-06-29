@@ -16,7 +16,7 @@
 #define POISON_PILL -2
 #define FIRST_TASK -1
 #define ARRAY_MSG 2 // tipo de mensagem que transmite um array
-#define DEBUG 1
+#define DEBUG 0
 
 /* Função de que é usado pelo qsort */
 int cmpfunc (const void * a, const void * b){
@@ -174,6 +174,8 @@ int main(int argc,char **argv){
         #pragma omp parallel private (i)
         #pragma omp for schedule (dynamic)
         for (i = 0; i < buffer_size; i += msg_size){
+          int th_id = omp_get_thread_num();
+          printf("[Worker %d] Thread %d ordering...\n", task_id, th_id);
           bs(msg_size-1, &worker_buffer[i]);
         }
         MPI_Send(worker_buffer, buffer_size, MPI_INT, MASTER, ARRAY_MSG, MPI_COMM_WORLD);
